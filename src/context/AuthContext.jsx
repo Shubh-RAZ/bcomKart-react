@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://site--bcomkart--xww9qqf4bywz.code.run/api";
 
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("bcomkart_token");
