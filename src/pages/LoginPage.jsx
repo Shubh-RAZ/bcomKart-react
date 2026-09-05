@@ -9,12 +9,20 @@ let googleScriptPromise;
 export function LoginPage() {
   const tokenClientRef = useRef(null);
   const navigate = useNavigate();
-  const { user, requestEmailOtp, verifyEmailOtp, signInWithGoogle, signOut } = useAuth();
+  const { user, requestEmailOtp, checkEmailExists, verifyEmailOtp, loginWithPassword, signInWithGoogle, signOut } = useAuth();
   const [message, setMessage] = useState("");
   const [isReady, setIsReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
+  const [loginStage, setLoginStage] = useState("email"); // email, password, otp, verify-otp
+  const [isExistingUser, setIsExistingUser] = useState(false);
   const [credentials, setCredentials] = useState({ name: "", email: "", password: "", otp: "" });
+
+  // Redirect if already signed in
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     if (!googleClientId) return undefined;
@@ -87,13 +95,41 @@ export function LoginPage() {
     setMessage("");
   };
 
+  // Stage 1: User enters email
+  const handleCheckEmail = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setIsSubmitting(true);
+    try {
+      const email = credentials.email.trim();
+      const exists = await checkEmailExists(email);
+      
+      if (exists) {
+        // Account exists - show password login form
+        setIsExistingUser(true);
+        setLoginStage("password");
+        setMessage("Sign in with your password");
+      } else {
+        // Account doesn't exist - show new user signup form
+        setIsExistingUser(false);
+        setLoginStage("new-user");
+        setMessage("Create a new account to continue");
+      }
+    } catch (error) {
+      setMessage(error.message || "Could not check account. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Stage 2: New user enters name and password, then requests OTP
   const handleRequestOtp = async (event) => {
     event.preventDefault();
     setMessage("");
     setIsSubmitting(true);
     try {
       await requestEmailOtp({ name: credentials.name.trim(), email: credentials.email.trim(), password: credentials.password });
-      setOtpSent(true);
+      setLoginStage("verify-otp");
       setMessage(`We sent a verification code to ${credentials.email.trim()}.`);
     } catch (error) {
       setMessage(error.message || "We could not send the verification code. Please try again.");
@@ -102,6 +138,22 @@ export function LoginPage() {
     }
   };
 
+  // Stage 2: Existing user enters password
+  const handlePasswordLogin = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setIsSubmitting(true);
+    try {
+      const signedInUser = await loginWithPassword({ email: credentials.email.trim(), password: credentials.password });
+      navigate(signedInUser.role === "ADMIN" ? "/admin" : "/");
+    } catch (error) {
+      setMessage(error.message || "Invalid email or password. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Stage 3: Verify OTP for new user
   const handleVerifyOtp = async (event) => {
     event.preventDefault();
     setMessage("");
@@ -136,7 +188,7 @@ export function LoginPage() {
           <div className="login-icon"><ShieldCheck size={21} /></div>
           <p className="eyebrow">Secure account</p>
           <h2 id="login-title">Sign in to bcom.kart</h2>
-          <p>Enter your details and verify your email to continue.</p>
+          <p>Sign in with your email and password, or create a new account.</p>
         </div>
 
         {user && (
@@ -149,18 +201,37 @@ export function LoginPage() {
           </div>
         )}
 
-        {!otpSent ? (
+        {loginStage === "email" && (
+          <form className="email-auth-form" onSubmit={handleCheckEmail}>
+            <label><span><Mail size={14} /> Email address</span><input name="email" type="email" value={credentials.email} onChange={handleCredentialChange} placeholder="you@example.com" autoComplete="email" required /></label>
+            <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Checking..." : "Continue"}</button>
+          </form>
+        )}
+
+        {loginStage === "new-user" && (
           <form className="email-auth-form" onSubmit={handleRequestOtp}>
             <label><span><UserRound size={14} /> Full name</span><input name="name" value={credentials.name} onChange={handleCredentialChange} placeholder="Your name" autoComplete="name" required /></label>
-            <label><span><Mail size={14} /> Email address</span><input name="email" type="email" value={credentials.email} onChange={handleCredentialChange} placeholder="you@example.com" autoComplete="email" required /></label>
+            <label><span><Mail size={14} /> Email address</span><input name="email" type="email" value={credentials.email} onChange={handleCredentialChange} placeholder="you@example.com" autoComplete="email" disabled /></label>
             <label><span><KeyRound size={14} /> Password</span><input name="password" type="password" value={credentials.password} onChange={handleCredentialChange} placeholder="At least 8 characters" autoComplete="new-password" minLength={8} required /></label>
             <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending code..." : "Send verification code"}</button>
+            <button className="text-auth-button" type="button" onClick={() => { setLoginStage("email"); setMessage(""); setCredentials(c => ({ ...c, name: "", password: "", otp: "" })); }}>Use a different email</button>
           </form>
-        ) : (
+        )}
+
+        {loginStage === "password" && (
+          <form className="email-auth-form" onSubmit={handlePasswordLogin}>
+            <label><span><Mail size={14} /> Email address</span><input name="email" type="email" value={credentials.email} onChange={handleCredentialChange} placeholder="you@example.com" autoComplete="email" disabled /></label>
+            <label><span><KeyRound size={14} /> Password</span><input name="password" type="password" value={credentials.password} onChange={handleCredentialChange} placeholder="Enter your password" autoComplete="current-password" required /></label>
+            <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Signing in..." : "Sign in"}</button>
+            <button className="text-auth-button" type="button" onClick={() => { setLoginStage("email"); setMessage(""); setCredentials(c => ({ ...c, password: "", otp: "" })); }}>Use a different email</button>
+          </form>
+        )}
+
+        {loginStage === "verify-otp" && (
           <form className="email-auth-form" onSubmit={handleVerifyOtp}>
             <label><span><Mail size={14} /> Verification code</span><input name="otp" value={credentials.otp} onChange={handleCredentialChange} placeholder="Enter 6-digit code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required /></label>
-            <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Verifying..." : "Verify and sign in"}</button>
-            <button className="text-auth-button" type="button" onClick={() => { setOtpSent(false); setMessage(""); }}>Use a different email</button>
+            <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Verifying..." : "Verify and create account"}</button>
+            <button className="text-auth-button" type="button" onClick={() => { setLoginStage("new-user"); setMessage(""); setCredentials(c => ({ ...c, otp: "" })); }}>Use a different email</button>
           </form>
         )}
         <div className="auth-divider"><span>or use backup</span></div>

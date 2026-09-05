@@ -45,10 +45,29 @@ export function AuthProvider({ children }) {
     });
   };
 
+  const checkEmailExists = async (email) => {
+    const result = await apiRequest("/auth/check-email", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    return result.exists;
+  };
+
   const verifyEmailOtp = async ({ email, otp }) => {
     const result = await apiRequest("/auth/verify-otp", {
       method: "POST",
       body: JSON.stringify({ email, otp }),
+    });
+    localStorage.setItem("bcomkart_token", result.token);
+    localStorage.setItem("bcomkart_user", JSON.stringify(result.user));
+    setUser(result.user);
+    return result.user;
+  };
+
+  const loginWithPassword = async ({ email, password }) => {
+    const result = await apiRequest("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
     });
     localStorage.setItem("bcomkart_token", result.token);
     localStorage.setItem("bcomkart_user", JSON.stringify(result.user));
@@ -62,7 +81,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, requestEmailOtp, verifyEmailOtp, signInWithGoogle, signOut }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, requestEmailOtp, checkEmailExists, verifyEmailOtp, loginWithPassword, signInWithGoogle, signOut }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
