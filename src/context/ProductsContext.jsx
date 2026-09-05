@@ -8,6 +8,8 @@ const useDummyProducts = import.meta.env.VITE_USE_DUMMY_PRODUCTS !== "false";
 function normalizeProduct(product) {
   const discount = Number(product.discount || 0);
   const price = Number(product.price || 0);
+  const image = product.image?.replace(/^http:\/\//, "https://");
+  const images = product.images?.length ? product.images : [image];
 
   return {
     id: product.productId || product.id,
@@ -19,8 +21,8 @@ function normalizeProduct(product) {
     rating: Number(product.rating || 0),
     reviews: Number(product.reviews || 0),
     discount,
-    image: product.image,
-    images: product.images?.length ? product.images : [product.image],
+    image,
+    images: images.map((item) => item?.replace(/^http:\/\//, "https://")),
     highlights: product.highlights || [],
     colors: product.colors || []
   };
