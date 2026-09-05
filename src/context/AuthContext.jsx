@@ -38,13 +38,31 @@ export function AuthProvider({ children }) {
     return result.user;
   };
 
+  const requestEmailOtp = async ({ name, email, password }) => {
+    return apiRequest("/auth/request-otp", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password }),
+    });
+  };
+
+  const verifyEmailOtp = async ({ email, otp }) => {
+    const result = await apiRequest("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ email, otp }),
+    });
+    localStorage.setItem("bcomkart_token", result.token);
+    localStorage.setItem("bcomkart_user", JSON.stringify(result.user));
+    setUser(result.user);
+    return result.user;
+  };
+
   const signOut = () => {
     localStorage.removeItem("bcomkart_token");
     localStorage.removeItem("bcomkart_user");
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, signInWithGoogle, signOut }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, requestEmailOtp, verifyEmailOtp, signInWithGoogle, signOut }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

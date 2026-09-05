@@ -54,6 +54,18 @@ a { color: inherit; text-decoration: none; }
 .login-panel h2 { margin: 8px 0 7px; font-family: Manrope, sans-serif; font-size: 24px; letter-spacing: -.7px; }
 .login-panel-heading > p:last-child { margin: 0; color: var(--muted); font-size: 12px; }
 .google-button-wrap { min-height: 42px; display: flex; justify-content: center; }
+.email-auth-form { display: grid; gap: 13px; }
+.email-auth-form label { display: grid; gap: 7px; color: #625d70; font-size: 11px; font-weight: 700; }
+.email-auth-form label span { display: flex; align-items: center; gap: 6px; }
+.email-auth-form label svg { color: var(--primary); }
+.email-auth-form input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #d9d5df; border-radius: 8px; outline: none; color: var(--ink); background: white; font-size: 13px; }
+.email-auth-form input:focus { border-color: #a98de9; box-shadow: 0 0 0 3px #f0ebff; }
+.primary-auth-button { min-height: 44px; margin-top: 4px; border: 0; border-radius: 8px; background: var(--primary); color: white; font-size: 13px; font-weight: 700; }
+.primary-auth-button:hover { background: var(--primary-dark); }
+.primary-auth-button:disabled, .google-fallback:disabled { cursor: wait; opacity: .65; }
+.text-auth-button { border: 0; background: transparent; color: var(--primary); font-size: 11px; font-weight: 700; }
+.auth-divider { display: flex; align-items: center; gap: 10px; margin: 22px 0 14px; color: #aaa5b4; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
+.auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: var(--line); }
 .google-fallback { width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid #d9d5df; border-radius: 8px; background: white; color: #343039; font-size: 13px; font-weight: 700; }
 .google-fallback:hover { background: #faf9fc; border-color: #bdb6c9; }
 .google-g { font-family: Arial, sans-serif; color: #4285f4; font-size: 18px; font-weight: 700; }

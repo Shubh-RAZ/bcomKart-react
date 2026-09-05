@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, LogOut, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, KeyRound, LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -9,9 +9,12 @@ let googleScriptPromise;
 export function LoginPage() {
   const tokenClientRef = useRef(null);
   const navigate = useNavigate();
-  const { user, signInWithGoogle, signOut } = useAuth();
+  const { user, requestEmailOtp, verifyEmailOtp, signInWithGoogle, signOut } = useAuth();
   const [message, setMessage] = useState("");
   const [isReady, setIsReady] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [credentials, setCredentials] = useState({ name: "", email: "", password: "", otp: "" });
 
   useEffect(() => {
     if (!googleClientId) return undefined;
@@ -78,6 +81,41 @@ export function LoginPage() {
     tokenClientRef.current.requestAccessToken({ prompt: "select_account" });
   };
 
+  const handleCredentialChange = (event) => {
+    const { name, value } = event.target;
+    setCredentials((current) => ({ ...current, [name]: value }));
+    setMessage("");
+  };
+
+  const handleRequestOtp = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setIsSubmitting(true);
+    try {
+      await requestEmailOtp({ name: credentials.name.trim(), email: credentials.email.trim(), password: credentials.password });
+      setOtpSent(true);
+      setMessage(`We sent a verification code to ${credentials.email.trim()}.`);
+    } catch (error) {
+      setMessage(error.message || "We could not send the verification code. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setIsSubmitting(true);
+    try {
+      const signedInUser = await verifyEmailOtp({ email: credentials.email.trim(), otp: credentials.otp.trim() });
+      navigate(signedInUser.role === "ADMIN" ? "/admin" : "/");
+    } catch (error) {
+      setMessage(error.message || "That code could not be verified. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="login-page">
       <div className="login-intro">
@@ -98,7 +136,7 @@ export function LoginPage() {
           <div className="login-icon"><ShieldCheck size={21} /></div>
           <p className="eyebrow">Secure account</p>
           <h2 id="login-title">Sign in to bcom.kart</h2>
-          <p>Use your Google account to continue.</p>
+          <p>Enter your details and verify your email to continue.</p>
         </div>
 
         {user && (
@@ -111,6 +149,21 @@ export function LoginPage() {
           </div>
         )}
 
+        {!otpSent ? (
+          <form className="email-auth-form" onSubmit={handleRequestOtp}>
+            <label><span><UserRound size={14} /> Full name</span><input name="name" value={credentials.name} onChange={handleCredentialChange} placeholder="Your name" autoComplete="name" required /></label>
+            <label><span><Mail size={14} /> Email address</span><input name="email" type="email" value={credentials.email} onChange={handleCredentialChange} placeholder="you@example.com" autoComplete="email" required /></label>
+            <label><span><KeyRound size={14} /> Password</span><input name="password" type="password" value={credentials.password} onChange={handleCredentialChange} placeholder="At least 8 characters" autoComplete="new-password" minLength={8} required /></label>
+            <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending code..." : "Send verification code"}</button>
+          </form>
+        ) : (
+          <form className="email-auth-form" onSubmit={handleVerifyOtp}>
+            <label><span><Mail size={14} /> Verification code</span><input name="otp" value={credentials.otp} onChange={handleCredentialChange} placeholder="Enter 6-digit code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required /></label>
+            <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Verifying..." : "Verify and sign in"}</button>
+            <button className="text-auth-button" type="button" onClick={() => { setOtpSent(false); setMessage(""); }}>Use a different email</button>
+          </form>
+        )}
+        <div className="auth-divider"><span>or use backup</span></div>
         {googleClientId ? (
           <button className="google-fallback" onClick={handleGoogleSignIn} disabled={!isReady}>
             <span className="google-g">G</span>
