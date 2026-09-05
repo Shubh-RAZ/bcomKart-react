@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, LogOut, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -9,7 +9,7 @@ let googleScriptPromise;
 export function LoginPage() {
   const tokenClientRef = useRef(null);
   const navigate = useNavigate();
-  const { signInWithGoogle } = useAuth();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const [message, setMessage] = useState("");
   const [isReady, setIsReady] = useState(false);
 
@@ -53,14 +53,10 @@ export function LoginPage() {
             }
 
             try {
-              const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-              });
-              if (!response.ok) throw new Error("Profile request failed");
-              await signInWithGoogle(tokenResponse.access_token);
-              navigate("/");
-            } catch {
-              setMessage("Google signed you in, but we could not load your profile.");
+              const signedInUser = await signInWithGoogle(tokenResponse.access_token);
+              navigate(signedInUser.role === "ADMIN" ? "/admin" : "/");
+            } catch (error) {
+              setMessage(error.message || "We could not complete Google sign in. Please try again.");
             }
           },
         });
@@ -74,6 +70,7 @@ export function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setMessage("");
+    signOut();
     if (!tokenClientRef.current) {
       setMessage("Google sign in is still loading. Please try again in a moment.");
       return;
@@ -103,6 +100,16 @@ export function LoginPage() {
           <h2 id="login-title">Sign in to bcom.kart</h2>
           <p>Use your Google account to continue.</p>
         </div>
+
+        {user && (
+          <div className="login-current-account">
+            <p>Currently signed in as <strong>{user.email}</strong></p>
+            <button className="google-fallback" onClick={signOut}>
+              <LogOut size={17} />
+              Sign out
+            </button>
+          </div>
+        )}
 
         {googleClientId ? (
           <button className="google-fallback" onClick={handleGoogleSignIn} disabled={!isReady}>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Heart, ShoppingCart, UserRound, Menu, X } from "lucide-react";
+import { Search, Heart, ShoppingCart, LogOut, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useCart } from "../../context/CartContext";
@@ -7,7 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 
 export function Header() {
   const { itemCount } = useCart();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -45,6 +45,7 @@ export function Header() {
             <span className="cart-icon"><ShoppingCart size={20} /><b>{itemCount}</b></span>
             <span className="hide-mobile">Cart</span>
           </Link>
+          {user && <button className="action-button hide-mobile" onClick={signOut} aria-label="Sign out"><LogOut size={19} /><span>Sign out</span></button>}
           <Link to={user?.role === "ADMIN" ? "/admin" : "/login"} className="profile-button" aria-label={user ? "Open account" : "Sign in"}>{user ? user.name.slice(0, 2).toUpperCase() : "SR"}</Link>
         </div>
       </div>

@@ -4,12 +4,17 @@ import { HeroBanner } from "../components/home/HeroBanner";
 import { TrustFeatures } from "../components/home/TrustFeatures";
 import { ProductCarousel } from "../components/product/ProductCarousel";
 import { SectionHeader } from "../components/common/SectionHeader";
-import { categories, products } from "../data/products";
+import { useProducts } from "../context/ProductsContext";
 
 export function HomePage() {
   const [params] = useSearchParams();
+  const { products, isLoading, error } = useProducts();
   const selectedCategory = params.get("category") || "All";
   const search = (params.get("search") || "").toLowerCase();
+  const categories = ["All", ...new Set(products.map((product) => product.category))];
+
+  if (isLoading) return <div className="empty-page"><h2>Loading products...</h2></div>;
+  if (error) return <div className="empty-page"><h2>Could not load products</h2><p>{error}</p></div>;
 
   const filtered = products.filter((product) => {
     const categoryMatch = selectedCategory === "All" || product.category === selectedCategory;

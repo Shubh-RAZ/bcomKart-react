@@ -1,21 +1,29 @@
 import React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ChevronRight, Minus, Plus, ShoppingCart, Zap, ShieldCheck, Truck, RotateCcw } from "lucide-react";
-import { getProductById } from "../data/products";
 import { Rating } from "../components/common/Rating";
 import { ProductCarousel } from "../components/product/ProductCarousel";
 import { useCart } from "../context/CartContext";
+import { useProducts } from "../context/ProductsContext";
 
 export function ProductPage() {
   const { productId } = useParams();
-  const product = getProductById(productId);
+  const { products, isLoading, error } = useProducts();
+  const product = products.find((item) => item.id === productId);
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [color, setColor] = useState(product?.colors?.[0]);
+  const [color, setColor] = useState("");
 
+  useEffect(() => {
+    setColor(product?.colors?.[0] || "");
+    setSelectedImage(0);
+  }, [product]);
+
+  if (isLoading) return <div className="empty-page"><h2>Loading product...</h2></div>;
+  if (error) return <div className="empty-page"><h2>Could not load product</h2><p>{error}</p><Link to="/">Back to shopping</Link></div>;
   if (!product) return <div className="empty-page"><span>😕</span><h2>Product not found</h2><Link to="/">Back to shopping</Link></div>;
 
   const buyNow = () => {
