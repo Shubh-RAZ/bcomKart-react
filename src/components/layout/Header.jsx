@@ -33,6 +33,7 @@ export function Header() {
 
         <nav className={`header-nav ${mobileOpen ? "is-open" : ""}`}>
           {user && <Link to="/orders">My Orders</Link>}
+          {user && <button className="mobile-signout" onClick={() => { signOut(); setMobileOpen(false); }}><LogOut size={16} /> Sign out</button>}
         </nav>
 
         <div className="header-actions">
