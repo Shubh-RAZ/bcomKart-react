@@ -11,21 +11,26 @@ export function HomePage() {
   const { products, isLoading, error } = useProducts();
   const selectedCategory = params.get("category") || "All";
   const search = (params.get("search") || "").toLowerCase();
-  const categories = ["All", ...new Set(products.map((product) => product.category))];
+  const categories = ["All", ...new Set(products.map((product) => product.category || "Electronics"))];
 
   if (isLoading) return <div className="empty-page"><h2>Loading products...</h2></div>;
   if (error) return <div className="empty-page"><h2>Could not load products</h2><p>{error}</p></div>;
 
   const filtered = products.filter((product) => {
-    const categoryMatch = selectedCategory === "All" || product.category === selectedCategory;
-    const searchMatch = !search || `${product.name} ${product.description}`.toLowerCase().includes(search);
+    const categoryMatch = selectedCategory === "All" || (product.category || "Electronics") === selectedCategory;
+    const productName = product.name || product.productName || "";
+    const productDesc = product.description || product.productDescription || "";
+    const searchMatch = !search || `${productName} ${productDesc}`.toLowerCase().includes(search);
     return categoryMatch && searchMatch;
   });
 
+  // Sort by discount descending for trending deals
+  const trendingDeals = [...products].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+
   const sections = selectedCategory === "All" && !search
     ? [
-        ["🔥 Trending Deals", products],
-        ["⚡ Electronics", products.filter((p) => p.category === "Electronics")],
+        ["🔥 Trending Deals", trendingDeals],
+        ["⚡ Electronics", products.filter((p) => (p.category || "Electronics") === "Electronics")],
         ["✨ Recommended For You", products.slice().reverse()]
       ]
     : [[search ? `Search results for "${search}"` : selectedCategory, filtered]];

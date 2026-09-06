@@ -1,44 +1,226 @@
 import React from "react";
 import { useState } from "react";
-import { CheckCircle2, CreditCard, LockKeyhole } from "lucide-react";
+import { CheckCircle2, LockKeyhole, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth, apiRequest } from "../context/AuthContext";
 import { DeliveryForm } from "../components/checkout/DeliveryForm";
 import { CouponBox } from "../components/checkout/CouponBox";
 import { OrderSummary } from "../components/checkout/OrderSummary";
 
 export function CheckoutPage() {
   const { items, subtotal, delivery, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [discount, setDiscount] = useState(0);
-  const [form, setForm] = useState({ fullName: "Shubham Raj", phone: "", address: "", landmark: "", city: "Bangalore", state: "Karnataka", pincode: "" });
+  const [couponCode, setCouponCode] = useState("");
+  const [form, setForm] = useState({ 
+    fullName: user?.name || "", 
+    phone: "", 
+    address: "", 
+    landmark: "", 
+    city: "", 
+    state: "", 
+    pincode: "" 
+  });
   const [placed, setPlaced] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState("");
+  const [orderId, setOrderId] = useState("");
 
   const total = Math.max(0, subtotal - discount + delivery);
 
-  const handleChange = (e) => setForm((current) => ({ ...current, [e.target.name]: e.target.value }));
-
-  const placeOrder = (e) => {
-    e.preventDefault();
-    if (!items.length) return;
-    setPlaced(true);
-    clearCart();
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((current) => ({ ...current, [name]: value }));
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors((current) => ({ ...current, [name]: "" }));
+    }
   };
 
-  if (placed) return <div className="success-page"><CheckCircle2 size={64}/><span className="eyebrow">Order confirmed</span><h1>Thanks, Shubham! 🎉</h1><p>Your bcom.kart order has been placed successfully. A confirmation will be sent to your phone.</p><Link to="/" className="primary-button">Continue Shopping</Link></div>;
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Validate required fields
+    if (!form.fullName || !form.fullName.trim()) {
+      newErrors.fullName = "Name is required";
+    }
+    
+    if (!form.phone || !form.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\d{10}$/.test(form.phone.replace(/\D/g, ''))) {
+      newErrors.phone = "Phone number must be 10 digits";
+    }
+    
+    if (!form.address || !form.address.trim()) {
+      newErrors.address = "Address is required";
+    }
+    
+    if (!form.city || !form.city.trim()) {
+      newErrors.city = "City is required";
+    }
+    
+    if (!form.state || !form.state.trim()) {
+      newErrors.state = "State is required";
+    }
+    
+    if (!form.pincode || !form.pincode.trim()) {
+      newErrors.pincode = "Pincode is required";
+    }
 
-  if (!items.length) return <div className="empty-page"><span>🧾</span><h2>No items to checkout</h2><p>Add a product to your cart first.</p><Link to="/" className="primary-button">Shop Now</Link></div>;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const placeOrder = async (e) => {
+    e.preventDefault();
+    
+    if (!items.length) {
+      setApiError("No items in cart");
+      return;
+    }
+
+    if (!user) {
+      setApiError("You must be logged in to place an order");
+      return;
+    }
+
+    if (!validateForm()) {
+      setApiError("Please fill all required fields correctly");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setApiError("");
+
+      // Create order payload
+      const orderPayload = {
+        products: items.map(item => ({
+          productId: item.product.productId || item.product.id,
+          name: item.product.name || item.product.productName,
+          quantity: item.quantity,
+          price: item.product.price
+        })),
+        userName: form.fullName,
+        phone: form.phone,
+        address_line_1: form.address,
+        address_line_2: form.landmark || "",
+        city: form.city,
+        state: form.state,
+        postalCode: form.pincode,
+        coupons: couponCode ? [couponCode] : [],
+        totalAmount: subtotal - discount,
+        paymentMethod: "COD"
+      };
+
+      // Make API request
+      const result = await apiRequest("/orders", {
+        method: "POST",
+        body: JSON.stringify(orderPayload)
+      });
+
+      // Success
+      setOrderId(result.orderId);
+      setPlaced(true);
+      clearCart();
+    } catch (error) {
+      console.error("Order placement error:", error);
+      setApiError(error.message || "Failed to place order. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (placed) {
+    return (
+      <div className="success-page">
+        <CheckCircle2 size={64}/>
+        <span className="eyebrow">Order confirmed</span>
+        <h1>Thanks, {form.fullName}! 🎉</h1>
+        <p>Your bcom.kart order has been placed successfully.</p>
+        <p style={{ fontSize: "14px", color: "#666" }}>Order ID: <strong>{orderId}</strong></p>
+        <p>A confirmation email has been sent to {user?.email}</p>
+        <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+          <Link to={`/order-status/${orderId}`} className="primary-button">Track Order</Link>
+          <Link to="/" className="primary-button" style={{ backgroundColor: "#f0f0f0", color: "#333" }}>Continue Shopping</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!items.length) {
+    return (
+      <div className="empty-page">
+        <span>🧾</span>
+        <h2>No items to checkout</h2>
+        <p>Add a product to your cart first.</p>
+        <Link to="/" className="primary-button">Shop Now</Link>
+      </div>
+    );
+  }
 
   return (
     <form className="checkout-page" onSubmit={placeOrder}>
-      <div className="checkout-progress"><div className="active"><b>1</b><span>Delivery</span></div><i></i><div><b>2</b><span>Payment</span></div><i></i><div><b>3</b><span>Confirmed</span></div></div>
+      <div className="checkout-progress">
+        <div className="active"><b>1</b><span>Delivery</span></div>
+        <i></i>
+        <div className="active"><b>2</b><span>Payment</span></div>
+        <i></i>
+        <div><b>3</b><span>Confirmed</span></div>
+      </div>
+      
       <div className="checkout-layout">
         <div className="checkout-main">
-          <DeliveryForm form={form} onChange={handleChange}/>
-          <CouponBox subtotal={subtotal} onDiscount={setDiscount}/>
-          <div className="payment-box"><div><CreditCard size={21}/><div><h3>Payment</h3><p>UPI, cards, net banking and more</p></div></div><span>Secure</span></div>
+          <DeliveryForm form={form} onChange={handleChange} errors={errors}/>
+          
+          <div className="payment-box" style={{ backgroundColor: "#f0f9ff", borderLeft: "4px solid #0070f3" }}>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <div style={{ fontSize: "24px" }}>💵</div>
+              <div>
+                <h3>Payment Method</h3>
+                <p><strong>Cash on Delivery (COD)</strong></p>
+                <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>Pay when you receive your order</p>
+              </div>
+            </div>
+            <span style={{ backgroundColor: "#0070f3", color: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "12px" }}>Only Option</span>
+          </div>
+
+          <CouponBox subtotal={subtotal} onDiscount={setDiscount} onCoupon={setCouponCode}/>
+          
+          {apiError && (
+            <div style={{ 
+              backgroundColor: "#fee", 
+              color: "#c33", 
+              padding: "12px", 
+              borderRadius: "4px", 
+              display: "flex", 
+              gap: "8px",
+              marginBottom: "16px"
+            }}>
+              <AlertCircle size={20} />
+              <div>
+                <strong>Error</strong>
+                <p>{apiError}</p>
+              </div>
+            </div>
+          )}
         </div>
-        <aside className="checkout-side"><OrderSummary items={items} subtotal={subtotal} discount={discount} delivery={delivery} total={total}/><button type="submit" className="primary-button full">Proceed to Payment <LockKeyhole size={16}/></button><small className="secure-note">🔒 Your payment information is protected.</small></aside>
+        
+        <aside className="checkout-side">
+          <OrderSummary items={items} subtotal={subtotal} discount={discount} delivery={delivery} total={total}/>
+          <button 
+            type="submit" 
+            className="primary-button full" 
+            disabled={loading}
+            style={{ opacity: loading ? 0.6 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+          >
+            {loading ? "Processing..." : "Place Order (COD)"} <LockKeyhole size={16}/>
+          </button>
+          <small className="secure-note">🔒 Your information is secure. No payment is taken now.</small>
+        </aside>
       </div>
     </form>
   );
