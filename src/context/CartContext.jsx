@@ -1,43 +1,85 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth, apiRequest } from "./AuthContext";
+import { useProducts } from "./ProductsContext";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
+  const [hydratedUserId, setHydratedUserId] = useState(null);
   const { user } = useAuth();
+  const { products, isLoading: productsLoading } = useProducts();
 
-  // Fetch cart from DB when user logs in
+  // Rebuild the local cart from the product IDs stored for this user.
   useEffect(() => {
     if (!user) {
       setItems([]);
+      setHydratedUserId(null);
       return;
     }
+    if (productsLoading) return;
+
+    let cancelled = false;
+    setItems([]);
+    setHydratedUserId(null);
 
     const fetchCart = async () => {
       try {
         const result = await apiRequest("/users/profile/cart-wishlist");
-        if (result?.cart && Array.isArray(result.cart) && result.cart.length > 0) {
-          // For now, just store the product IDs - actual implementation would fetch full product details
-          // This maintains backward compatibility with local storage
-        }
+        if (cancelled) return;
+        const savedIds = Array.isArray(result?.cart) ? result.cart : [];
+        const productById = new Map(products.map((product) => [product.id || product.productId, product]));
+        const savedQuantities = savedIds.reduce((quantities, productId) => {
+          quantities.set(productId, (quantities.get(productId) || 0) + 1);
+          return quantities;
+        }, new Map());
+        const restoredItems = [...savedQuantities.entries()]
+          .map(([productId, quantity]) => ({ product: productById.get(productId), quantity }))
+          .filter((item) => item.product);
+        setItems(restoredItems);
+        setHydratedUserId(user.userId);
       } catch (error) {
-        console.error("Failed to fetch cart from server:", error);
+        if (!cancelled) {
+          setHydratedUserId(user.userId);
+          console.error("Failed to fetch cart from server:", error);
+        }
       }
     };
 
     fetchCart();
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, products, productsLoading]);
+
+  // Sync only after the server cart has been loaded, using the latest items.
+  useEffect(() => {
+    if (!user || hydratedUserId !== user.userId) return;
+    const syncCart = async () => {
+      try {
+        const cartIds = items.flatMap((item) => Array.from(
+          { length: item.quantity },
+          () => item.product.productId || item.product.id
+        ));
+        await apiRequest("/cart", {
+          method: "PATCH",
+          body: JSON.stringify({ carts: cartIds })
+        });
+      } catch (error) {
+        console.error("Failed to sync cart to server:", error);
+      }
+    };
+    syncCart();
+  }, [items, user, hydratedUserId]);
 
   const addToCart = (product, quantity = 1) => {
     setItems((current) => {
-      const existing = current.find(
-        (item) => item.product.productId === product.productId || item.product.id === product.id
-      );
+      const productId = product.productId || product.id;
+      const existing = current.find((item) => (item.product.productId || item.product.id) === productId);
 
       if (existing) {
         return current.map((item) =>
-          (item.product.productId === product.productId || item.product.id === product.id)
+          (item.product.productId || item.product.id) === productId
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
@@ -45,58 +87,24 @@ export function CartProvider({ children }) {
 
       return [...current, { product, quantity }];
     });
-
-    // Sync to server if user is logged in
-    if (user) {
-      syncCartToServer(items);
-    }
   };
 
   const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) {
-      setItems((current) =>
-        current.filter((item) => (item.product.productId || item.product.id) !== productId)
+    setItems((current) => {
+      if (quantity <= 0) {
+        return current.filter((item) => (item.product.productId || item.product.id) !== productId);
+      }
+      return current.map((item) =>
+        (item.product.productId || item.product.id) === productId ? { ...item, quantity } : item
       );
-      return;
-    }
-
-    setItems((current) =>
-      current.map((item) =>
-        (item.product.productId || item.product.id) === productId
-          ? { ...item, quantity }
-          : item
-      )
-    );
-
-    if (user) {
-      syncCartToServer(items);
-    }
+    });
   };
 
   const removeFromCart = (productId) => {
-    setItems((current) =>
-      current.filter((item) => (item.product.productId || item.product.id) !== productId)
-    );
-
-    if (user) {
-      syncCartToServer(items);
-    }
+    setItems((current) => current.filter((item) => (item.product.productId || item.product.id) !== productId));
   };
 
   const clearCart = () => setItems([]);
-
-  const syncCartToServer = async (currentItems) => {
-    if (!user) return;
-    try {
-      const cartIds = currentItems.map(item => item.product.productId || item.product.id);
-      await apiRequest("/cart", {
-        method: "PATCH",
-        body: JSON.stringify({ carts: cartIds })
-      });
-    } catch (error) {
-      console.error("Failed to sync cart to server:", error);
-    }
-  };
 
   const itemCount = items.reduce(
     (sum, item) => sum + item.quantity,

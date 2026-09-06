@@ -1,0 +1,47 @@
+.orders-page { max-width: 980px; margin: 0 auto; }
+.orders-page-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
+.orders-page-heading h1 { margin: 7px 0 4px; font-family: Manrope, sans-serif; font-size: 32px; letter-spacing: -1.2px; }
+.orders-page-heading p:last-child { margin: 0; color: var(--muted); font-size: 13px; }
+.orders-count { padding: 8px 11px; border-radius: 99px; background: var(--soft); color: var(--primary); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.orders-list { display: grid; gap: 14px; }
+.order-card { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: white; box-shadow: 0 4px 14px rgba(30,18,70,.03); }
+.order-card-header, .order-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; }
+.order-card-header { border-bottom: 1px solid var(--line); }
+.order-number { margin: 0 0 6px; color: var(--ink); font-size: 12px; font-weight: 800; }
+.order-date { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; }
+.order-status { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+.order-status > span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-pending { background: #fff5df; color: #a96a0c; }
+.status-confirmed { background: #eef4ff; color: #3d65b4; }
+.status-shipped { background: #f2edff; color: var(--primary); }
+.status-delivered { background: #eaf8ef; color: var(--green); }
+.status-cancelled { background: #fff0f4; color: #b8325e; }
+.order-card-body { display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 18px; }
+.order-products { display: grid; gap: 12px; }
+.order-product { display: flex; align-items: center; gap: 10px; }
+.order-product-image { width: 48px; height: 48px; display: grid; place-items: center; overflow: hidden; flex: none; border-radius: 8px; background: #f6f5fa; color: var(--muted); }
+.order-product-image img { width: 100%; height: 100%; object-fit: cover; }
+.order-product strong, .order-product small { display: block; }
+.order-product strong { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.order-product small { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.order-total { min-width: 130px; align-self: center; padding-left: 20px; border-left: 1px solid var(--line); }
+.order-total small, .order-total strong { display: block; }
+.order-total small { color: var(--muted); font-size: 10px; }
+.order-total strong { margin: 5px 0; font-size: 18px; }
+.order-card-footer { border-top: 1px solid var(--line); background: #fcfbfe; }
+.order-card-footer > div { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.delivery-estimate { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; }
+.order-card-footer small { color: var(--muted); font-size: 10px; }
+.order-track-link { display: inline-flex; align-items: center; gap: 3px; color: var(--primary); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.orders-empty { display: grid; place-items: center; align-content: center; min-height: 330px; padding: 30px; border: 1px dashed #d9d2ec; border-radius: 15px; background: white; color: var(--muted); text-align: center; }
+.orders-empty svg { color: var(--primary); }
+.orders-empty h2 { margin: 12px 0 5px; color: var(--ink); font-family: Manrope, sans-serif; font-size: 20px; }
+.orders-empty p { margin: 0 0 18px; font-size: 12px; }
+@media (max-width: 600px) {
+  .orders-page-heading { align-items: flex-start; flex-direction: column; }
+  .orders-page-heading h1 { font-size: 28px; }
+  .order-card-body { grid-template-columns: 1fr; }
+  .order-total { min-width: 0; padding: 14px 0 0; border-top: 1px solid var(--line); border-left: 0; }
+  .order-card-header, .order-card-footer { align-items: flex-start; flex-direction: column; }
+  .order-track-link { align-self: flex-end; }
+}

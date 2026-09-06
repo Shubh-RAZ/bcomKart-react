@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Heart, ShoppingCart, LogOut, Menu, X } from "lucide-react";
+import { Search, Heart, ShoppingCart, Package, LogOut, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useCart } from "../../context/CartContext";
@@ -32,15 +32,12 @@ export function Header() {
         </div>
 
         <nav className={`header-nav ${mobileOpen ? "is-open" : ""}`}>
-          <Link to="/">Home</Link>
-          <Link to="/?category=Electronics">Electronics</Link>
-          <Link to="/?category=Fashion">Fashion</Link>
-          <Link to="/?category=Home%20%26%20Kitchen">Home & Kitchen</Link>
-          <Link to="/?category=Sports">Sports</Link>
+          {user && <Link to="/orders">My Orders</Link>}
         </nav>
 
         <div className="header-actions">
           <button className="action-button hide-mobile" aria-label="Wishlist"><Heart size={19} /><span>Wishlist</span></button>
+          {user && <Link to="/orders" className="action-button hide-mobile" aria-label="Orders"><Package size={19} /><span>Orders</span></Link>}
           <Link to="/cart" className="action-button cart-action" aria-label="Cart">
             <span className="cart-icon"><ShoppingCart size={20} /><b>{itemCount}</b></span>
             <span className="hide-mobile">Cart</span>
