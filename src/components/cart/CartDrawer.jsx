@@ -1,16 +1,29 @@
 import React from "react";
 import { X, Plus, Minus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "../../context/CartContext";
 import { Link } from "react-router-dom";
 
 export function CartDrawer() {
   const [open, setOpen] = useState(false);
+  const [cartPulse, setCartPulse] = useState(false);
   const { items, itemCount, subtotal, updateQuantity, removeFromCart } = useCart();
+  const previousItemCount = useRef(itemCount);
+
+  useEffect(() => {
+    if (itemCount > previousItemCount.current) {
+      setCartPulse(true);
+      const timeout = window.setTimeout(() => setCartPulse(false), 650);
+      previousItemCount.current = itemCount;
+      return () => window.clearTimeout(timeout);
+    }
+    previousItemCount.current = itemCount;
+    return undefined;
+  }, [itemCount]);
 
   return (
     <>
-      <button className="floating-cart" onClick={() => setOpen(true)} aria-label="Open cart">
+      <button className={`floating-cart ${cartPulse ? "is-pulsing" : ""}`} onClick={() => setOpen(true)} aria-label="Open cart">
         🛒 <b>{itemCount}</b>
       </button>
       {open && (

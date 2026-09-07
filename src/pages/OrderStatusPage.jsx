@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Package, CheckCircle2, Truck, Home } from "lucide-react";
 import { apiRequest } from "../context/AuthContext";
 import "./OrderStatusPage.css";
+import { LoadingScreen } from "../components/common/LoadingScreen";
 
 export function OrderStatusPage() {
   const { orderId } = useParams();
@@ -31,11 +32,7 @@ export function OrderStatusPage() {
   }, [orderId]);
 
   if (loading) {
-    return (
-      <div className="empty-page">
-        <h2>Loading order status...</h2>
-      </div>
-    );
+    return <LoadingScreen label="Loading order status" />;
   }
 
   if (error) {

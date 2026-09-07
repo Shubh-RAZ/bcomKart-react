@@ -1,6 +1,5 @@
-import React from "react";
-import { useState } from "react";
-import { CheckCircle2, LockKeyhole, AlertCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { CheckCircle2, Coins, LockKeyhole, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth, apiRequest } from "../context/AuthContext";
@@ -28,8 +27,19 @@ export function CheckoutPage() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [bcomCoins, setBcomCoins] = useState(0);
+  const [coinsUsed, setCoinsUsed] = useState(0);
+  const beforeCoins = Math.max(0, subtotal - discount);
+  const total = Math.max(0, beforeCoins - coinsUsed + delivery);
 
-  const total = Math.max(0, subtotal - discount + delivery);
+  useEffect(() => {
+    if (!user) return;
+    apiRequest("/users/me").then((account) => setBcomCoins(account.bcomCoins || 0)).catch(() => setBcomCoins(0));
+  }, [user]);
+
+  useEffect(() => {
+    setCoinsUsed((current) => Math.min(current, bcomCoins, beforeCoins));
+  }, [bcomCoins, beforeCoins]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -112,7 +122,8 @@ export function CheckoutPage() {
         state: form.state,
         postalCode: form.pincode,
         coupons: couponCode ? [couponCode] : [],
-        totalAmount: subtotal - discount,
+        totalAmount: beforeCoins - coinsUsed,
+        bcomCoinsUsed: coinsUsed,
         paymentMethod: "COD"
       };
 
@@ -140,7 +151,7 @@ export function CheckoutPage() {
         <CheckCircle2 size={64}/>
         <span className="eyebrow">Order confirmed</span>
         <h1>Thanks, {form.fullName}! 🎉</h1>
-        <p>Your bcom.kart order has been placed successfully.</p>
+        <p>Your Bcomkart order has been placed successfully.</p>
         <p style={{ fontSize: "14px", color: "#666" }}>Order ID: <strong>{orderId}</strong></p>
         <p>A confirmation email has been sent to {user?.email}</p>
         <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
@@ -189,6 +200,11 @@ export function CheckoutPage() {
           </div>
 
           <CouponBox subtotal={subtotal} onDiscount={setDiscount} onCoupon={setCouponCode}/>
+          <div className="coins-checkout-box">
+            <div className="coins-checkout-heading"><span className="coins-icon"><Coins size={19} /></span><div><strong>Use BcomCoins</strong><small>{bcomCoins} coins available · 1 coin = ₹1</small></div></div>
+            <label className="coins-toggle"><input type="checkbox" checked={coinsUsed > 0} onChange={(event) => setCoinsUsed(event.target.checked ? Math.min(bcomCoins, beforeCoins) : 0)} disabled={!bcomCoins || !beforeCoins} /><span>Apply available coins</span></label>
+            {coinsUsed > 0 && <div className="coins-range"><input type="range" min="0" max={Math.min(bcomCoins, beforeCoins)} value={coinsUsed} onChange={(event) => setCoinsUsed(Number(event.target.value))} /><strong>{coinsUsed} coins = ₹{coinsUsed} off</strong></div>}
+          </div>
           
           {apiError && (
             <div style={{ 

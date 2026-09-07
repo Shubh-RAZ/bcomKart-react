@@ -38,10 +38,10 @@ export function AuthProvider({ children }) {
     return result.user;
   };
 
-  const requestEmailOtp = async ({ name, email, password }) => {
+  const requestEmailOtp = async ({ name, email, password, gender }) => {
     return apiRequest("/auth/request-otp", {
       method: "POST",
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, gender }),
     });
   };
 

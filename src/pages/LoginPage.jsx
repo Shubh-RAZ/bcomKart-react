@@ -15,7 +15,7 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginStage, setLoginStage] = useState("email"); // email, password, otp, verify-otp
   const [isExistingUser, setIsExistingUser] = useState(false);
-  const [credentials, setCredentials] = useState({ name: "", email: "", password: "", otp: "" });
+  const [credentials, setCredentials] = useState({ name: "", email: "", password: "", gender: "", otp: "" });
 
   // Redirect if already signed in
   useEffect(() => {
@@ -128,7 +128,7 @@ export function LoginPage() {
     setMessage("");
     setIsSubmitting(true);
     try {
-      await requestEmailOtp({ name: credentials.name.trim(), email: credentials.email.trim(), password: credentials.password });
+      await requestEmailOtp({ name: credentials.name.trim(), email: credentials.email.trim(), password: credentials.password, gender: credentials.gender });
       setLoginStage("verify-otp");
       setMessage(`We sent a verification code to ${credentials.email.trim()}.`);
     } catch (error) {
@@ -172,7 +172,7 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-intro">
         <Link to="/" className="login-back"><ArrowLeft size={16} /> Back to shopping</Link>
-        <div className="login-brand-mark">bcom<span>.kart</span></div>
+        <div className="login-brand-mark">bcom<span>kart</span></div>
         <p className="eyebrow">Welcome back</p>
         <h1>Your everyday picks, all in one place.</h1>
         <p className="login-intro-copy">Sign in to keep your cart, saved items, and orders together wherever you shop.</p>
@@ -187,7 +187,7 @@ export function LoginPage() {
         <div className="login-panel-heading">
           <div className="login-icon"><ShieldCheck size={21} /></div>
           <p className="eyebrow">Secure account</p>
-          <h2 id="login-title">Sign in to bcom.kart</h2>
+          <h2 id="login-title">Sign in to Bcomkart</h2>
           <p>Sign in with your email and password, or create a new account.</p>
         </div>
 
@@ -213,6 +213,7 @@ export function LoginPage() {
             <label><span><UserRound size={14} /> Full name</span><input name="name" value={credentials.name} onChange={handleCredentialChange} placeholder="Your name" autoComplete="name" required /></label>
             <label><span><Mail size={14} /> Email address</span><input name="email" type="email" value={credentials.email} onChange={handleCredentialChange} placeholder="you@example.com" autoComplete="email" disabled /></label>
             <label><span><KeyRound size={14} /> Password</span><input name="password" type="password" value={credentials.password} onChange={handleCredentialChange} placeholder="At least 8 characters" autoComplete="new-password" minLength={8} required /></label>
+            <fieldset className="gender-options"><legend>Choose your profile</legend><label><input type="radio" name="gender" value="Male" checked={credentials.gender === "Male"} onChange={handleCredentialChange} required /><span>Male</span></label><label><input type="radio" name="gender" value="Diva" checked={credentials.gender === "Diva"} onChange={handleCredentialChange} /><span>Diva</span></label></fieldset>
             <button className="primary-auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending code..." : "Send verification code"}</button>
             <button className="text-auth-button" type="button" onClick={() => { setLoginStage("email"); setMessage(""); setCredentials(c => ({ ...c, name: "", password: "", otp: "" })); }}>Use a different email</button>
           </form>
@@ -234,18 +235,7 @@ export function LoginPage() {
             <button className="text-auth-button" type="button" onClick={() => { setLoginStage("new-user"); setMessage(""); setCredentials(c => ({ ...c, otp: "" })); }}>Use a different email</button>
           </form>
         )}
-        <div className="auth-divider"><span>or use backup</span></div>
-        {googleClientId ? (
-          <button className="google-fallback" onClick={handleGoogleSignIn} disabled={!isReady}>
-            <span className="google-g">G</span>
-            {isReady ? "Continue with Google" : "Loading Google sign in..."}
-          </button>
-        ) : (
-          <button className="google-fallback" onClick={() => setMessage("Add VITE_GOOGLE_CLIENT_ID to your environment to enable Google sign in.")}>
-            <span className="google-g">G</span>
-            Continue with Google
-          </button>
-        )}
+        {/* Google authentication is temporarily disabled. */}
         {message && <p className="login-message" role="status">{message}</p>}
         <p className="login-terms">By continuing, you agree to our <Link to="/">Terms of Service</Link> and <Link to="/">Privacy Policy</Link>.</p>
       </section>

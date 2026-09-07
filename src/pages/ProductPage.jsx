@@ -6,6 +6,7 @@ import { Rating } from "../components/common/Rating";
 import { ProductCarousel } from "../components/product/ProductCarousel";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductsContext";
+import { LoadingScreen } from "../components/common/LoadingScreen";
 
 export function ProductPage() {
   const { productId } = useParams();
@@ -22,7 +23,7 @@ export function ProductPage() {
     setSelectedImage(0);
   }, [product]);
 
-  if (isLoading) return <div className="empty-page"><h2>Loading product...</h2></div>;
+  if (isLoading) return <LoadingScreen label="Loading product" />;
   if (error) return <div className="empty-page"><h2>Could not load product</h2><p>{error}</p><Link to="/">Back to shopping</Link></div>;
   if (!product) return <div className="empty-page"><span>😕</span><h2>Product not found</h2><Link to="/">Back to shopping</Link></div>;
 
@@ -58,7 +59,7 @@ export function ProductPage() {
 
       <section className="description-panel"><h2>Product Description</h2><p>Designed for comfortable everyday listening, the {product.name} combines dependable performance with a sleek design. Enjoy clear audio, easy connectivity and features made for your daily routine.</p><h3>Why you'll love it</h3><ul>{product.highlights.map((x) => <li key={x}>{x}</li>)}</ul></section>
 
-     {/* <section className="product-section"><div className="section-header"><div><h2>You may also like</h2><p>More picks from bcom.kart</p></div></div><ProductCarousel products={products.filter((p) => p.id !== product.id).slice(0, 5)}/></section>
+     {/* <section className="product-section"><div className="section-header"><div><h2>You may also like</h2><p>More picks from Bcomkart</p></div></div><ProductCarousel products={products.filter((p) => p.id !== product.id).slice(0, 5)}/></section>
      */}
     </div>
   );

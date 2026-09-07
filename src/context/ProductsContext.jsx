@@ -16,6 +16,7 @@ function normalizeProduct(product) {
     name: product.productName || product.name,
     description: product.productDescription || product.description || "",
     category: product.category || "Other",
+    gender: product.gender || "All",
     price,
     originalPrice: Number(product.originalPrice || (discount > 0 && discount < 100 ? price / (1 - discount / 100) : price)),
     rating: Number(product.rating || 0),
@@ -30,19 +31,27 @@ function normalizeProduct(product) {
 
 export function ProductsProvider({ children }) {
   const [products, setProducts] = useState(useDummyProducts ? dummyProducts : []);
+  const [requestedProducts, setRequestedProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(!useDummyProducts);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (useDummyProducts) return;
-
-    apiRequest("/products")
-      .then((items) => setProducts(items.map(normalizeProduct)))
+    const productRequest = useDummyProducts ? Promise.resolve(dummyProducts) : apiRequest("/products");
+    const categoryRequest = useDummyProducts
+      ? Promise.resolve([])
+      : apiRequest("/categories").catch(() => []);
+    Promise.all([productRequest, apiRequest("/products/requests"), categoryRequest])
+      .then(([items, requests, categoryItems]) => {
+        if (!useDummyProducts) setProducts(items.map(normalizeProduct));
+        setRequestedProducts(requests);
+        setCategories(categoryItems.map((category) => category.name));
+      })
       .catch((requestError) => setError(requestError.message || "Unable to load products."))
       .finally(() => setIsLoading(false));
   }, []);
 
-  return <ProductsContext.Provider value={{ products, isLoading, error, useDummyProducts }}>{children}</ProductsContext.Provider>;
+  return <ProductsContext.Provider value={{ products, requestedProducts, categories, isLoading, error, useDummyProducts }}>{children}</ProductsContext.Provider>;
 }
 
 export function useProducts() {

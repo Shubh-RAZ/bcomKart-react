@@ -1,12 +1,10 @@
 import React from "react";
-import { Search, Heart, ShoppingCart, Package, LogOut, Menu, X } from "lucide-react";
+import { Search, Heart, Package, Bell, LogOut, Menu, Shield, X, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 
 export function Header() {
-  const { itemCount } = useCart();
   const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -24,7 +22,7 @@ export function Header() {
           {mobileOpen ? <X size={21} /> : <Menu size={21} />}
         </button>
 
-        <Link to="/" className="brand">bcom<span>.kart</span></Link>
+        <Link to="/" className="brand">bcom<span>kart</span></Link>
 
         <div className="search-box">
           <Search size={18} />
@@ -32,19 +30,17 @@ export function Header() {
         </div>
 
         <nav className={`header-nav ${mobileOpen ? "is-open" : ""}`}>
-          {user && <Link to="/orders">My Orders</Link>}
+          {user?.role === "ADMIN" && <Link to="/admin" onClick={() => setMobileOpen(false)}><Shield size={16} /> Admin panel</Link>}
           {user && <button className="mobile-signout" onClick={() => { signOut(); setMobileOpen(false); }}><LogOut size={16} /> Sign out</button>}
         </nav>
 
         <div className="header-actions">
-          <button className="action-button hide-mobile" aria-label="Wishlist"><Heart size={19} /><span>Wishlist</span></button>
-          {user && <Link to="/orders" className="action-button hide-mobile" aria-label="Orders"><Package size={19} /><span>Orders</span></Link>}
-          <Link to="/cart" className="action-button cart-action" aria-label="Cart">
-            <span className="cart-icon"><ShoppingCart size={20} /><b>{itemCount}</b></span>
-            <span className="hide-mobile">Cart</span>
-          </Link>
+          <Link to={user ? "/wishlist" : "/login"} className="action-button hide-mobile" aria-label="Wishlist"><Heart size={19} /><span>Wishlist</span></Link>
+          {user && <Link to="/orders" className="action-button hide-mobile" aria-label="My Orders"><Package size={19} /><span>My Orders</span></Link>}
+          {user?.role === "ADMIN" && <Link to="/admin" className="action-button hide-mobile" aria-label="Admin panel"><Shield size={19} /><span>Admin</span></Link>}
+          <Link to={user ? "/notifications" : "/login"} className="action-button" aria-label="Notifications"><Bell size={20} /><span className="hide-mobile">Notifications</span></Link>
           {user && <button className="action-button hide-mobile" onClick={signOut} aria-label="Sign out"><LogOut size={19} /><span>Sign out</span></button>}
-          <Link to={user?.role === "ADMIN" ? "/admin" : "/login"} className="profile-button" aria-label={user ? "Open account" : "Sign in"}>{user ? user.name.slice(0, 2).toUpperCase() : "SR"}</Link>
+          <Link to="/profile" className="profile-button" aria-label="Open profile"><UserRound size={18} /></Link>
         </div>
       </div>
     </header>

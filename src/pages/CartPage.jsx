@@ -12,7 +12,7 @@ export function CartPage() {
 
   return (
     <div className="cart-page">
-      <div className="page-heading"><div><span className="eyebrow">bcom.kart</span><h1>Your Cart</h1><p>{itemCount} {itemCount === 1 ? "item" : "items"} ready for checkout.</p></div></div>
+      <div className="page-heading"><div><span className="eyebrow">Bcomkart</span><h1>Your Cart</h1><p>{itemCount} {itemCount === 1 ? "item" : "items"} ready for checkout.</p></div></div>
       <div className="cart-layout">
         <div className="cart-items">{items.map((item) => <CartItem key={item.product.id} item={item}/>)}</div>
         <aside className="cart-summary">

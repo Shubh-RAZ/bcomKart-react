@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { CalendarDays, ChevronRight, Package, Truck } from "lucide-react";
 import { apiRequest, useAuth } from "../context/AuthContext";
 import "./OrdersPage.css";
+import { LoadingScreen } from "../components/common/LoadingScreen";
 
 const statusLabels = {
   PENDING: "Order placed",
@@ -27,7 +28,7 @@ export function OrdersPage() {
   }, [user]);
 
   if (!user) return <Navigate to="/login" replace />;
-  if (loading) return <div className="empty-page"><h2>Loading your orders...</h2></div>;
+  if (loading) return <LoadingScreen label="Loading your orders" />;
   if (error) return <div className="empty-page"><span>!</span><h2>Orders unavailable</h2><p>{error}</p><Link to="/" className="primary-button">Continue Shopping</Link></div>;
 
   return <div className="orders-page">
