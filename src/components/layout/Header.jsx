@@ -22,7 +22,7 @@ export function Header() {
           {mobileOpen ? <X size={21} /> : <Menu size={21} />}
         </button>
 
-        <Link to="/" className="brand">bcom<span>kart</span></Link>
+        <Link to="/" className="brand">Bcom<span>kart</span></Link>
 
         <div className="search-box">
           <Search size={18} />
