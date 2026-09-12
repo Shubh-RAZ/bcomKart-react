@@ -14,7 +14,7 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, autoStart = false }) {
+function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, autoStart = false, onQuit }) {
   const boardBackgrounds = [
     { id: "meadow", label: "Meadow", value: "linear-gradient(180deg, #d8f5d6 0%, #a9d2a1 38%, #6fa26d 100%)" },
     { id: "sunset", label: "Sunset", value: "linear-gradient(180deg, #ffe4be 0%, #ffb48c 38%, #9e5d74 100%)" },
@@ -32,6 +32,7 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
   const [roundOver, setRoundOver] = useState(false);
   const [hitCount, setHitCount] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [health, setHealth] = useState(100);
   const [background, setBackground] = useState(boardBackgrounds[0]);
   const [pressedHole, setPressedHole] = useState(null);
   const [hitPulse, setHitPulse] = useState(null);
@@ -74,6 +75,14 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
   }, [isPlaying]);
 
   useEffect(() => {
+    if (health <= 0 && isPlaying) {
+      setIsPlaying(false);
+      setRoundOver(true);
+      setActiveHole(null);
+    }
+  }, [health, isPlaying]);
+
+  useEffect(() => {
     if (hitCount >= 12 && isPlaying) {
       setIsPlaying(false);
       setRoundOver(true);
@@ -99,6 +108,7 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
     setTimeLeft(90);
     setHitCount(0);
     setStreak(0);
+    setHealth(100);
     setActiveHole(null);
     setActiveAvatar(0);
     setPressedHole(null);
@@ -113,6 +123,7 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
     setTimeLeft(90);
     setHitCount(0);
     setStreak(0);
+    setHealth(100);
     setActiveHole(0);
     setActiveAvatar(0);
     setPressedHole(null);
@@ -127,6 +138,10 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
     }
   }, [autoStart, isPlaying, roundOver]);
 
+  const applyHealthDelta = (delta) => {
+    setHealth((current) => clamp(current + delta, 0, 100));
+  };
+
   const handleWhack = (index) => {
     if (!isPlaying || activeHole !== index) return;
 
@@ -136,6 +151,7 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
     setScore((current) => current + 10);
     setHitCount((current) => current + 1);
     setStreak((current) => current + 1);
+    applyHealthDelta(8);
 
     window.clearTimeout(window.__moleWhackTimeout);
     window.__moleWhackTimeout = window.setTimeout(() => {
@@ -165,14 +181,17 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
             <p className="eyebrow">Whack a mole</p>
             <h3>Arcade reflex challenge</h3>
           </div>
-          <div className="game-score">{hitCount}/12</div>
+          <HealthBar value={health} />
         </div>
       )}
 
       <div className={`game-toolbar ${isFullScreen ? "game-toolbar-full" : ""}`}>
         <div className="game-stats">
-          <span><TimerIcon /> {timeLeft}s</span>
-          <span><Zap size={14} /> {Math.max(20, hitCount * 4)} coins</span>
+          <div className="game-stats-top">
+            <span><TimerIcon /> {timeLeft}s</span>
+            <span><Zap size={14} /> {Math.max(20, hitCount * 4)} coins</span>
+          </div>
+          <HealthBar value={health} compact />
         </div>
         {!isFullScreen && <div className="game-status">{gameStatusText}</div>}
       </div>
@@ -198,7 +217,10 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
             <div className="board-finish-card">
               <p className="eyebrow">Game over</p>
               <h3>Earned: {Math.max(20, hitCount * 4)} coins</h3>
-              <button type="button" className="primary-button" onClick={resetRound}>Try again</button>
+              <div className="board-finish-actions">
+                <button type="button" className="primary-button" onClick={resetRound}>Try again</button>
+                <button type="button" className="secondary-button" onClick={onQuit}>Quit</button>
+              </div>
             </div>
           </div>
         )}
@@ -220,6 +242,7 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
                     if (!isPlaying) return;
                     if (!isVisible) {
                       setStreak(0);
+                      applyHealthDelta(-18);
                       return;
                     }
                     setPressedHole(index);
@@ -277,18 +300,42 @@ function MoleGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, auto
   );
 }
 
+function getHealthBarColor(value) {
+  const safeValue = clamp(Number(value) || 0, 0, 100);
+
+  if (safeValue <= 15) return "#ef4444";
+  if (safeValue <= 25) return "#f97316";
+  if (safeValue <= 50) return "#facc15";
+  return "#22c55e";
+}
+
+function HealthBar({ value, compact = false }) {
+  const safeValue = clamp(Number(value) || 0, 0, 100);
+  const barColor = getHealthBarColor(safeValue);
+
+  return (
+    <div className={compact ? "health-pill" : "health-score"} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={safeValue}>
+      <span className={compact ? "health-pill-label" : "health-score-label"}>❤️</span>
+      <span className={compact ? "health-pill-bar" : "health-bar"}>
+        <span style={{ width: `${safeValue}%`, background: `linear-gradient(90deg, ${barColor} 0%, ${barColor} 100%)` }} />
+      </span>
+    </div>
+  );
+}
+
 function TimerIcon() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /></svg>;
 }
 
-function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, autoStart = false }) {
+function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, autoStart = false, onQuit }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(20);
+  const [health, setHealth] = useState(100);
   const [playerX, setPlayerX] = useState(50);
   const [fallingItems, setFallingItems] = useState([]);
   const [roundOver, setRoundOver] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [minutesSurvived, setMinutesSurvived] = useState(0);
   const rewardTriggered = useRef(false);
   const playerXRef = useRef(50);
   const boardRef = useRef(null);
@@ -316,6 +363,18 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
   useEffect(() => {
     if (!isPlaying) return undefined;
 
+    const minuteMarker = window.setInterval(() => {
+      setMinutesSurvived((current) => current + 1);
+    }, 30000);
+
+    return () => window.clearInterval(minuteMarker);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying) return undefined;
+
+    const spawnIntervalMs = Math.max(500, 1200 - minutesSurvived * 110);
+
     const spawnInterval = window.setInterval(() => {
       const spawnType = Math.random() < 0.7 ? "good" : "bad";
       const goodItems = ["⭐", "💎", "🎯", "🎁", "🪙"];
@@ -328,15 +387,26 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
           id: Date.now() + Math.random(),
           x: Math.random() * 82 + 9,
           y: -12,
-          speed: 0.9 + Math.random() * 1.3,
+          speed: 0.9 + Math.random() * 1.3 + minutesSurvived * 0.12,
           type: spawnType,
           emoji,
         },
       ]);
-    }, 430);
+    }, spawnIntervalMs);
 
     return () => window.clearInterval(spawnInterval);
-  }, [isPlaying]);
+  }, [isPlaying, minutesSurvived]);
+
+  const applyDodgeHealthDelta = (delta) => {
+    setHealth((current) => {
+      const next = clamp(current + delta, 0, 100);
+      if (next <= 0 && isPlaying) {
+        setIsPlaying(false);
+        setRoundOver(true);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!isPlaying) return undefined;
@@ -347,7 +417,7 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
 
         const surviving = [];
         let caughtGood = 0;
-        let collidedBad = false;
+        let collidedBad = 0;
 
         next.forEach((item) => {
           const playerLeft = playerXRef.current - 8;
@@ -359,7 +429,7 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
               caughtGood += 1;
               return;
             }
-            collidedBad = true;
+            collidedBad += 1;
             return;
           }
 
@@ -370,11 +440,11 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
 
         if (caughtGood > 0) {
           setScore((currentScore) => currentScore + caughtGood * 10);
+          applyDodgeHealthDelta(caughtGood * 7);
         }
 
-        if (collidedBad) {
-          setIsPlaying(false);
-          setRoundOver(true);
+        if (collidedBad > 0) {
+          applyDodgeHealthDelta(-30 * collidedBad);
         }
 
         return surviving;
@@ -385,22 +455,11 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
   }, [isPlaying]);
 
   useEffect(() => {
-    if (!isPlaying) return undefined;
-
-    const countdown = window.setInterval(() => {
-      setTimeLeft((current) => {
-        if (current <= 1) {
-          window.clearInterval(countdown);
-          setIsPlaying(false);
-          setRoundOver(true);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(countdown);
-  }, [isPlaying]);
+    if (health <= 0 && isPlaying) {
+      setIsPlaying(false);
+      setRoundOver(true);
+    }
+  }, [health, isPlaying]);
 
   useEffect(() => {
     if (!roundOver || rewardTriggered.current) return;
@@ -438,7 +497,8 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
     setPlayerX(50);
     setFallingItems([]);
     setScore(0);
-    setTimeLeft(20);
+    setHealth(100);
+    setMinutesSurvived(0);
     setRoundOver(false);
     setIsPlaying(false);
     setIsDragging(false);
@@ -449,7 +509,8 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
     setPlayerX(50);
     setFallingItems([]);
     setScore(0);
-    setTimeLeft(20);
+    setHealth(100);
+    setMinutesSurvived(0);
     setRoundOver(false);
     setIsPlaying(true);
     setIsDragging(false);
@@ -469,7 +530,7 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
             <p className="eyebrow">Dodge game</p>
             <h3>Catch the good ones</h3>
           </div>
-          <div className="game-score">{score} pts</div>
+          <HealthBar value={health} />
         </div>
       )}
 
@@ -478,8 +539,10 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
       )}
       <div className={`game-toolbar ${isFullScreen ? "game-toolbar-full" : ""}`}>
         <div className="game-stats">
-          <span><TimerIcon /> {timeLeft}s</span>
-          <span><Zap size={14} /> +{Math.max(15, Math.floor(score / 18))} coins</span>
+          <div className="game-stats-top">
+            <span><Zap size={14} /> +{Math.max(15, Math.floor(score / 18))} coins</span>
+          </div>
+          <HealthBar value={health} compact />
         </div>
       </div>
       <div
@@ -511,6 +574,10 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
             <div className="board-finish-card">
               <p className="eyebrow">Game over</p>
               <h3>Earned: {Math.max(15, Math.floor(score / 18))} coins</h3>
+              <div className="board-finish-actions">
+                <button type="button" className="primary-button" onClick={resetRound}>Try again</button>
+                <button type="button" className="secondary-button" onClick={onQuit}>Quit</button>
+              </div>
             </div>
           </div>
         )}
@@ -528,7 +595,7 @@ function DodgeGame({ onReward, isFullScreen = false, onGameEnd, onStartGame, aut
                 style={{ left: `${item.x}%`, top: `${item.y}%` }}
                 aria-label={item.type === "good" ? "Good item" : "Bad item"}
               >
-                {item.emoji}
+                <span className="dodging-item-emoji">{item.emoji}</span>
               </div>
             ))}
           </>
@@ -634,9 +701,9 @@ export function CoinsPage() {
             </div>
           )}
           {fullscreenGame === "mole" ? (
-            <MoleGame onReward={awardCoins} isFullScreen onGameEnd={() => {}} autoStart={autoStartGame === "mole"} />
+            <MoleGame onReward={awardCoins} isFullScreen onGameEnd={() => {}} autoStart={autoStartGame === "mole"} onQuit={closeGame} />
           ) : (
-            <DodgeGame onReward={awardCoins} isFullScreen onGameEnd={() => {}} autoStart={autoStartGame === "dodge"} />
+            <DodgeGame onReward={awardCoins} isFullScreen onGameEnd={() => {}} autoStart={autoStartGame === "dodge"} onQuit={closeGame} />
           )}
         </div>
       </div>
