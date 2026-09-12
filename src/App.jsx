@@ -15,6 +15,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { AccountPage } from "./pages/AccountPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { WishlistPage } from "./pages/WishlistPage";
+import { CoinsPage } from "./pages/CoinsPage";
 import { LoadingScreen } from "./components/common/LoadingScreen";
 import { useProducts } from "./context/ProductsContext";
 import { apiRequest } from "./context/AuthContext";
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="/profile" element={<AccountPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/coins" element={<CoinsPage />} />
             <Route path="/under-construction" element={<Navigate to="/" replace />} />
             <Route path={killSwitchPath} element={<KillSwitchPage />} />
             <Route path="*" element={<NotFoundPage />} />

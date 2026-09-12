@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Heart, Package, Bell, LogOut, Menu, Shield, X, UserRound } from "lucide-react";
+import { Search, Heart, Package, Bell, LogOut, Menu, Shield, X, UserRound, Coins } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
@@ -36,6 +36,7 @@ export function Header() {
 
         <div className="header-actions">
           <Link to={user ? "/wishlist" : "/login"} className="action-button hide-mobile" aria-label="Wishlist"><Heart size={19} /><span>Wishlist</span></Link>
+          <Link to={user ? "/coins" : "/login"} className="action-button" aria-label="Coins"><Coins size={19} /><span className="hide-mobile">Coins</span></Link>
           {user && <Link to="/orders" className="action-button hide-mobile" aria-label="My Orders"><Package size={19} /><span>My Orders</span></Link>}
           {user?.role === "ADMIN" && <Link to="/admin" className="action-button hide-mobile" aria-label="Admin panel"><Shield size={19} /><span>Admin</span></Link>}
           <Link to={user ? "/notifications" : "/login"} className="action-button" aria-label="Notifications"><Bell size={20} /><span className="hide-mobile">Notifications</span></Link>

@@ -1,6 +1,7 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { Store, ShoppingBag, Wrench } from "lucide-react";
 import { HeroBanner } from "../components/home/HeroBanner";
 import { TrustFeatures } from "../components/home/TrustFeatures";
 import { ProductCarousel } from "../components/product/ProductCarousel";
@@ -17,13 +18,43 @@ export function HomePage() {
   const [requestDetails, setRequestDetails] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
   const [requesting, setRequesting] = useState(false);
+  const selectedService = params.get("service") || "Bcomkart";
   const selectedCategory = params.get("category") || "All";
   const search = (params.get("search") || "").toLowerCase();
   const requestName = params.get("search") || "";
+  const serviceTabs = [
+    { label: "Bcomkart", icon: Store },
+    { label: "Groceries", icon: ShoppingBag },
+    { label: "Services", icon: Wrench },
+  ];
   const categories = ["All", ...(remoteCategories.length ? remoteCategories : [...new Set(products.map((product) => product.category || "Electronics"))])];
 
   if (isLoading) return <LoadingScreen label="Loading products" />;
   if (error) return <div className="empty-page"><h2>Could not load products</h2><p>{error}</p></div>;
+
+  if (selectedService !== "Bcomkart") {
+    return (
+      <>
+        <div className="service-tabs">
+          {serviceTabs.map(({ label, icon: Icon }) => (
+            <Link
+              key={label}
+              to={label === "Bcomkart" ? "/" : `/?service=${encodeURIComponent(label)}`}
+              className={selectedService === label ? "service-tab active" : "service-tab"}
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+            </Link>
+          ))}
+        </div>
+        <div className="coming-soon-card">
+          <span className="coming-soon-icon">{selectedService === "Groceries" ? "🛒" : "🛠️"}</span>
+          <h2>{selectedService} is coming soon</h2>
+          <p>We’re building this storefront experience next. Once live, it will open with its own product catalog and service flow.</p>
+        </div>
+      </>
+    );
+  }
 
   const genderProducts = user?.gender
     ? products.filter((product) => !product.gender || product.gender === "All" || product.gender === user.gender)
@@ -36,7 +67,6 @@ export function HomePage() {
     return categoryMatch && searchMatch;
   });
 
-  // Sort by discount descending for trending deals
   const trendingDeals = [...genderProducts].sort((a, b) => (b.discount || 0) - (a.discount || 0));
 
   const sections = selectedCategory === "All" && !search
@@ -58,6 +88,18 @@ export function HomePage() {
 
   return (
     <>
+      <div className="service-tabs">
+        {serviceTabs.map(({ label, icon: Icon }) => (
+          <Link
+            key={label}
+            to={label === "Bcomkart" ? "/" : `/?service=${encodeURIComponent(label)}`}
+            className={selectedService === label ? "service-tab active" : "service-tab"}
+          >
+            <Icon size={16} />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </div>
       <HeroBanner />
       <div className="category-pills">
         {categories.map((category) => (
